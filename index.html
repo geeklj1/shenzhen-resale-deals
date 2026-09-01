@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#173b5e" />
+    <meta name="description" content="按片区、小区、总价和成交时间查询深圳二手房历史成交记录。" />
+    <meta property="og:title" content="深圳二手房成交查询" />
+    <meta property="og:description" content="移动端快速筛选深圳二手房历史成交记录。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://geeklj1.github.io/shenzhen-resale-deals/" />
+    <meta property="og:image" content="https://geeklj1.github.io/shenzhen-resale-deals/og.png" />
+    <title>深圳二手房成交查询</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --navy: #173b5e;
+        --teal: #197b8d;
+        --ink: #10243a;
+        --muted: #718290;
+        --line: #dce5ec;
+        --soft: #f3f7f9;
+        --page: #edf2f6;
+        --surface: #ffffff;
+        --green: #16816e;
+        --orange: #d65534;
+      }
+      * { box-sizing: border-box; }
+      html { background: var(--page); -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: var(--page);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      }
+      button, input, select { font: inherit; }
+      button, select, input[type="date"] { touch-action: manipulation; }
+      button { color: inherit; }
+      .app {
+        min-height: 100dvh;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        background: #f7f9fb;
+        box-shadow: 0 0 45px rgba(15, 38, 62, 0.12);
+      }
+      .hero {
+        background: var(--navy);
+        color: white;
+        padding: max(22px, env(safe-area-inset-top)) 20px 26px;
+      }
+      .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+      .eyebrow { margin: 0; color: #9ec7dc; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; }
+      h1 { margin: 5px 0 0; font-size: 25px; letter-spacing: -0.03em; line-height: 1.2; }
+      .stat {
+        flex: none;
+        border: 1px solid rgba(255,255,255,.15);
+        border-radius: 16px;
+        background: rgba(255,255,255,.10);
+        padding: 8px 12px;
+        text-align: right;
+      }
+      .stat-label { display: block; color: #bcd8e7; font-size: 11px; }
+      .stat-value { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; }
+      .stat-value small { font-size: 12px; font-weight: 400; }
+      .range { margin: 15px 0 0; color: #c8dce7; font-size: 12px; line-height: 20px; }
+      .filters-wrap { position: relative; z-index: 2; margin-top: -8px; padding: 0 16px; }
+      .filters {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 12px 30px rgba(28, 57, 83, 0.08);
+      }
+      .filter-toggle {
+        width: 100%; min-height: 50px; border: 0; background: transparent;
+        display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+        font-size: 14px; font-weight: 700; text-align: left;
+      }
+      .filter-toggle-main { display: flex; align-items: center; gap: 8px; }
+      .sliders { color: var(--teal); font-size: 17px; }
+      .count-pill { min-width: 21px; height: 21px; border-radius: 99px; padding: 0 7px; background: #dff2ee; color: #127262; font-size: 12px; line-height: 21px; text-align: center; }
+      .chevron { color: #6f8090; transition: transform .18s ease; }
+      .filters.closed .chevron { transform: rotate(180deg); }
+      .filter-body { border-top: 1px solid #edf1f4; padding: 12px 16px 16px; }
+      .filters.closed .filter-body { display: none; }
+      .search-box { position: relative; }
+      .search-mark { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #7a8996; }
+      .search-clear { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; background: transparent; color: #7a8996; font-size: 19px; }
+      .control {
+        width: 100%; height: 44px; border: 1px solid #d9e3ea; border-radius: 12px;
+        background: #f8fafb; color: var(--ink); padding: 0 11px; outline: none; font-size: 14px;
+      }
+      .control:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(25,123,141,.12); }
+      .search-input { padding-left: 36px; padding-right: 42px; font-size: 15px; }
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+      .field-label { display: block; margin-bottom: 6px; color: #657786; font-size: 11px; font-weight: 600; }
+      .date-row { display: grid; grid-template-columns: 1fr 16px 1fr; align-items: end; gap: 8px; margin-top: 12px; }
+      .date-line { height: 1px; margin-bottom: 22px; background: #aab7c2; }
+      input[type="date"] { padding: 0 7px; font-size: 13px; }
+      .reset { width: 100%; height: 40px; margin-top: 8px; border: 0; background: transparent; color: #617383; }
+      .hidden { display: none !important; }
+      .results { padding: 20px 16px max(28px, env(safe-area-inset-bottom)); }
+      .results-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .results-label { margin: 0; color: #748493; font-size: 12px; }
+      .results-count { margin: 3px 0 0; font-size: 17px; font-weight: 700; }
+      .sort { width: 132px; height: 40px; background: white; font-size: 13px; }
+      .cards { display: grid; gap: 12px; }
+      .card {
+        border: 1px solid #dfe7ed; border-radius: 16px; background: white; padding: 16px;
+        box-shadow: 0 5px 18px rgba(22, 54, 79, .04);
+      }
+      .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+      .community { overflow: hidden; margin: 0; font-size: 17px; line-height: 1.3; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+      .where { margin: 6px 0 0; color: #718290; font-size: 12px; }
+      .where .pin { color: var(--teal); }
+      .price { flex: none; text-align: right; }
+      .total { margin: 0; color: var(--orange); font-size: 22px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .total small { font-size: 12px; }
+      .unit { margin: 7px 0 0; color: #738391; font-size: 11px; }
+      .facts { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 16px; border-radius: 12px; background: var(--soft); padding: 12px 2px; text-align: center; }
+      .fact + .fact { border-left: 1px solid #dce5ea; }
+      .fact-label { margin: 0; color: #788895; font-size: 11px; }
+      .fact-value { margin: 5px 0 0; font-size: 14px; font-weight: 700; }
+      .green { color: var(--green); }
+      .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; color: #6c7e8d; font-size: 12px; }
+      .tag { flex: none; border: 1px solid #cbe3df; border-radius: 99px; background: #eef8f5; color: #177563; padding: 3px 8px; font-size: 11px; }
+      .load-more { width: 100%; height: 48px; margin-top: 16px; border: 1px solid #cfdae2; border-radius: 12px; background: white; color: #244864; font-weight: 700; }
+      .empty { border: 1px dashed #cfdbe3; border-radius: 16px; background: white; padding: 44px 24px; text-align: center; }
+      .empty-icon { color: #9aabb7; font-size: 32px; }
+      .empty h2 { margin: 12px 0 0; font-size: 16px; }
+      .empty p { margin: 7px 0 0; color: #758592; font-size: 14px; }
+      .empty button { height: 44px; margin-top: 20px; border: 0; border-radius: 10px; background: var(--navy); color: white; padding: 0 20px; font-weight: 700; }
+      .loading { height: 164px; border: 1px solid #e2e9ee; border-radius: 16px; background: linear-gradient(90deg,#fff,#f1f5f7,#fff); background-size: 200% 100%; animation: pulse 1.3s infinite; }
+      @keyframes pulse { to { background-position: -200% 0; } }
+      .footnote { margin: 20px 0 0; color: #8a99a5; font-size: 11px; line-height: 20px; text-align: center; }
+      @media (min-width: 481px) { body { padding: 0 0 32px; } }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="eyebrow">深圳 · 二手房成交</p>
+            <h1>成交记录查询</h1>
+          </div>
+          <div class="stat">
+            <span class="stat-label">收录成交</span>
+            <span class="stat-value">5,634 <small>套</small></span>
+          </div>
+        </div>
+        <p class="range">数据范围 2025.11—2026.08 · 来源于成交截图整理</p>
+      </header>
+
+      <section class="filters-wrap">
+        <div class="filters" id="filters">
+          <button class="filter-toggle" id="filterToggle" type="button" aria-expanded="true">
+            <span class="filter-toggle-main"><span class="sliders">☷</span>筛选条件 <span class="count-pill hidden" id="activeCount">0</span></span>
+            <span class="chevron">⌃</span>
+          </button>
+          <div class="filter-body">
+            <label class="search-box">
+              <span class="search-mark">⌕</span>
+              <input class="control search-input" id="community" placeholder="输入小区名称" autocomplete="off" />
+              <button class="search-clear hidden" id="clearCommunity" type="button" aria-label="清空小区名称">×</button>
+            </label>
+
+            <div class="grid-2">
+              <label><span class="field-label">片区</span><select class="control" id="region"><option value="all">全部片区</option></select></label>
+              <label>
+                <span class="field-label">成交总价</span>
+                <select class="control" id="priceBand">
+                  <option value="all">不限总价</option><option value="under200">200万以下</option><option value="200to400">200–400万</option>
+                  <option value="400to600">400–600万</option><option value="600to1000">600–1000万</option>
+                  <option value="1000to2000">1000–2000万</option><option value="over2000">2000万以上</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="date-row">
+              <label><span class="field-label">成交时间（起）</span><input class="control" id="dateFrom" type="date" min="2025-11-16" max="2026-08-15" /></label>
+              <span class="date-line"></span>
+              <label><span class="field-label">成交时间（止）</span><input class="control" id="dateTo" type="date" min="2025-11-16" max="2026-08-15" /></label>
+            </div>
+            <button class="reset hidden" id="reset" type="button">清除全部筛选</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="results">
+        <div class="results-head">
+          <div><p class="results-label">查询结果</p><p class="results-count" id="resultsCount">正在加载…</p></div>
+          <select class="control sort" id="sort" aria-label="结果排序">
+            <option value="newest">成交时间优先</option><option value="priceAsc">总价由低到高</option><option value="priceDesc">总价由高到低</option>
+          </select>
+        </div>
+        <div class="cards" id="cards"><div class="loading"></div><div class="loading"></div><div class="loading"></div></div>
+        <button class="load-more hidden" id="loadMore" type="button">查看更多成交</button>
+        <div class="empty hidden" id="empty"><div class="empty-icon">⌂</div><h2>没有匹配的成交记录</h2><p>换个片区、价格段或成交时间试试</p><button id="emptyReset" type="button">重置筛选</button></div>
+        <p class="footnote">数据由用户提供的成交截图整理，仅供信息参考</p>
+      </section>
+    </main>
+
+    <script>
+      const state = { data: [], visible: 20 };
+      const $ = (id) => document.getElementById(id);
+      const els = {
+        filters: $('filters'), toggle: $('filterToggle'), active: $('activeCount'), community: $('community'), clearCommunity: $('clearCommunity'),
+        region: $('region'), price: $('priceBand'), from: $('dateFrom'), to: $('dateTo'), reset: $('reset'), sort: $('sort'), count: $('resultsCount'),
+        cards: $('cards'), loadMore: $('loadMore'), empty: $('empty'), emptyReset: $('emptyReset')
+      };
+
+      function priceMatch(value, band) {
+        if (band === 'under200') return value < 200;
+        if (band === '200to400') return value >= 200 && value < 400;
+        if (band === '400to600') return value >= 400 && value < 600;
+        if (band === '600to1000') return value >= 600 && value < 1000;
+        if (band === '1000to2000') return value >= 1000 && value < 2000;
+        if (band === 'over2000') return value >= 2000;
+        return true;
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+      }
+
+      function filteredData() {
+        const query = els.community.value.trim().toLocaleLowerCase('zh-CN');
+        const rows = state.data.filter((item) => {
+          if (els.region.value !== 'all' && item.region !== els.region.value) return false;
+          if (query && !item.community.toLocaleLowerCase('zh-CN').includes(query)) return false;
+          if (!priceMatch(item.total, els.price.value)) return false;
+          if (els.from.value && item.date < els.from.value) return false;
+          if (els.to.value && item.date > els.to.value) return false;
+          return true;
+        });
+        if (els.sort.value === 'priceAsc') rows.sort((a,b) => a.total - b.total);
+        else if (els.sort.value === 'priceDesc') rows.sort((a,b) => b.total - a.total);
+        else rows.sort((a,b) => b.date.localeCompare(a.date));
+        return rows;
+      }
+
+      function card(item, index) {
+        const negotiation = item.negotiation == null ? '—' : `${(item.negotiation * 100).toFixed(2)}%`;
+        return `<article class="card">
+          <div class="card-top"><div style="min-width:0"><h2 class="community">${escapeHtml(item.community)}</h2>
+          <p class="where"><span class="pin">●</span> ${escapeHtml(item.region)}${item.builtYear ? ` · ${item.builtYear}年建` : ''}</p></div>
+          <div class="price"><p class="total">${Number(item.total).toLocaleString('zh-CN',{maximumFractionDigits:0})}<small>万</small></p><p class="unit">${Number(item.unit).toFixed(2)} 万/㎡</p></div></div>
+          <div class="facts"><div class="fact"><p class="fact-label">户型</p><p class="fact-value">${item.rooms ? `${item.rooms}室` : '—'}</p></div>
+          <div class="fact"><p class="fact-label">建筑面积</p><p class="fact-value">${item.area}㎡</p></div>
+          <div class="fact"><p class="fact-label">议价率</p><p class="fact-value ${item.negotiation != null && item.negotiation < 0 ? 'green' : ''}">${negotiation}</p></div></div>
+          <div class="card-foot"><span>▣ 成交于 ${item.date.replaceAll('-','.')}</span><span class="tag">成交记录</span></div>
+        </article>`;
+      }
+
+      function render() {
+        const rows = filteredData();
+        const active = [els.region.value !== 'all', !!els.community.value.trim(), els.price.value !== 'all', !!els.from.value, !!els.to.value].filter(Boolean).length;
+        els.active.textContent = active;
+        els.active.classList.toggle('hidden', active === 0);
+        els.reset.classList.toggle('hidden', active === 0);
+        els.clearCommunity.classList.toggle('hidden', !els.community.value);
+        els.count.textContent = `${rows.length.toLocaleString('zh-CN')} 套成交`;
+        els.cards.innerHTML = rows.slice(0, state.visible).map(card).join('');
+        els.loadMore.classList.toggle('hidden', state.visible >= rows.length);
+        els.empty.classList.toggle('hidden', rows.length !== 0);
+        els.cards.classList.toggle('hidden', rows.length === 0);
+      }
+
+      function reset() {
+        els.region.value = 'all'; els.community.value = ''; els.price.value = 'all'; els.from.value = ''; els.to.value = ''; els.sort.value = 'newest'; state.visible = 20; render();
+      }
+
+      els.toggle.addEventListener('click', () => { const closed = els.filters.classList.toggle('closed'); els.toggle.setAttribute('aria-expanded', String(!closed)); });
+      [els.community, els.region, els.price, els.from, els.to, els.sort].forEach((el) => el.addEventListener(el === els.community ? 'input' : 'change', () => { state.visible = 20; render(); }));
+      els.clearCommunity.addEventListener('click', () => { els.community.value = ''; els.community.focus(); state.visible = 20; render(); });
+      els.reset.addEventListener('click', reset); els.emptyReset.addEventListener('click', reset);
+      els.loadMore.addEventListener('click', () => { state.visible += 20; render(); });
+
+      fetch('./transactions.json').then((response) => {
+        if (!response.ok) throw new Error('数据加载失败');
+        return response.json();
+      }).then((data) => {
+        state.data = data;
+        [...new Set(data.map((item) => item.region))].sort((a,b) => a.localeCompare(b,'zh-CN')).forEach((region) => {
+          const option = document.createElement('option'); option.value = region; option.textContent = region; els.region.appendChild(option);
+        });
+        render();
+      }).catch(() => {
+        els.count.textContent = '数据暂时无法加载';
+        els.cards.innerHTML = '<div class="empty"><h2>页面加载失败</h2><p>请刷新页面后重试</p></div>';
+      });
+    </script>
+  </body>
+</html>
