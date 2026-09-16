@@ -23,7 +23,7 @@ export function roomsOf(layout) {
 }
 
 export const DEFAULTS = {
-  q: '', districts: [], area_groups: [], sources: [], rooms: [], facings: [],
+  q: '', districts: [], area_groups: [], rooms: [], facings: [],
   dateFrom: '', dateTo: '',
   areaMin: null, areaMax: null, totalMin: null, totalMax: null,
   unitMin: null, unitMax: null, builtMin: null, builtMax: null,
@@ -40,7 +40,7 @@ function passes(r, f, dict, roomCache) {
   if (f.onlyDupCandidates && !(r[C.dup_candidates] > 0)) return false;
   if (f.districts.length && !f.districts.includes(r[C.district])) return false;
   if (f.area_groups.length && !f.area_groups.includes(r[C.area_group])) return false;
-  if (f.sources.length && !f.sources.includes(r[C.source])) return false;
+  if (f.sources && f.sources.length && !f.sources.includes(r[C.source])) return false;
   if (f.facings.length) {   // facings 存的是方位位掩码（0=未标注），组合朝向按位命中
     const m = (dict.facing_mask && dict.facing_mask[r[C.facing]]) || 0;
     const orBits = f.facings.reduce((a, b) => a | b, 0);
@@ -127,17 +127,14 @@ export function summarize(rows, dict) {
   if (!rows.length) {
     return { count: 0, medianUnit: null, meanUnit: null, medianArea: null, minArea: null, maxArea: null,
       medianTotal: null, minTotal: null, maxTotal: null, dateFrom: null, dateTo: null,
-      bySource: {}, byDistrict: {} };
+      byDistrict: {} };
   }
   const units = rows.map((r) => r[C.unit]);
   const areas = rows.map((r) => r[C.area]);
   const totals = rows.map((r) => r[C.total]);
   const dates = rows.map((r) => r[C.date]).filter(Boolean).sort();
-  const bySource = {};
   const byDistrict = {};
   for (const r of rows) {
-    const s = dict.source[r[C.source]] || '-';
-    bySource[s] = (bySource[s] || 0) + 1;
     const d = dict.district[r[C.district]] || '-';
     byDistrict[d] = (byDistrict[d] || 0) + 1;
   }
@@ -147,12 +144,12 @@ export function summarize(rows, dict) {
     medianArea: median(areas), minArea: extent(areas, Math.min), maxArea: extent(areas, Math.max),
     medianTotal: median(totals), minTotal: extent(totals, Math.min), maxTotal: extent(totals, Math.max),
     dateFrom: dates[0] || null, dateTo: dates[dates.length - 1] || null,
-    bySource, byDistrict,
+    byDistrict,
   };
 }
 
-const CSV_HEAD = ['成交日期', '来源', '统计期', '行政区', '片区', '小区', '建成年份', '户型',
-  '面积(㎡)', '总价(万)', '单价(万/㎡)', '谈价率(%)', '朝向', '重复标记', '来源笔记'];
+const CSV_HEAD = ['成交日期', '统计期', '行政区', '片区', '小区', '建成年份', '户型',
+  '面积(㎡)', '总价(万)', '单价(万/㎡)', '谈价率(%)', '朝向', '重复标记'];
 
 export function toCSV(rows, dict) {
   const esc = (v) => {
@@ -162,14 +159,13 @@ export function toCSV(rows, dict) {
   const lines = [CSV_HEAD.join(',')];
   for (const r of rows) {
     const conf = dict.dup_conf[r[C.dup_conf]];
-    const mark = [conf ? `与另一来源重复(${conf})` : '', r[C.dup_candidates] > 0 ? `可能重复x${r[C.dup_candidates]}` : '']
+    const mark = [conf ? `疑似同一笔重复(${conf})` : '', r[C.dup_candidates] > 0 ? `可能重复x${r[C.dup_candidates]}` : '']
       .filter(Boolean).join('/');
     lines.push([
-      r[C.date], dict.source[r[C.source]], dict.period[r[C.period]] ? dict.period[r[C.period]].label : '',
+      r[C.date], dict.period[r[C.period]] ? dict.period[r[C.period]].label : '',
       dict.district[r[C.district]], dict.area_group[r[C.area_group]], dict.community[r[C.community]],
       r[C.built_year], dict.layout[r[C.layout]], r[C.area], r[C.total], r[C.unit], r[C.neg],
       dict.facing[r[C.facing]], mark,
-      dict.note[r[C.note]] ? dict.note[r[C.note]].url : '',
     ].map(esc).join(','));
   }
   return lines.join('\n');

@@ -83,7 +83,6 @@ function bindDate(id, key) {
 
 function initControls() {
   chipGroup($('#districts'), DICT.district.map((_, i) => i), 'districts', DICT.district);
-  chipGroup($('#sources'), DICT.source.map((_, i) => i), 'sources', DICT.source);
   chipGroup($('#rooms'), [1, 2, 3, 4, 5, 6], 'rooms', ['1室', '2室', '3室', '4室', '5室', '6室+']);
   // 朝向按位掩码：东1 南2 西4 北8 东南16 西南32 东北64 西北128，0=未标注
   chipGroup($('#facings'), [0, 1, 2, 4, 8, 16, 32, 64, 128], 'facings',
@@ -178,7 +177,7 @@ function openSheet(open) {
 
 function activeFilterCount() {
   let n = 0;
-  for (const k of ['districts', 'area_groups', 'sources', 'rooms', 'facings']) if (FILTERS[k].length) n++;
+  for (const k of ['districts', 'area_groups', 'rooms', 'facings']) if ((FILTERS[k] || []).length) n++;
   for (const k of [...NUM_FIELDS, 'dateFrom', 'dateTo']) if (FILTERS[k] !== null && FILTERS[k] !== '') n++;
   if (FILTERS.dedupe !== 'raw') n++;
   if (FILTERS.onlyDupCandidates) n++;
@@ -196,7 +195,7 @@ function applyPreset(name) {
   if (name === 'recent30') f.dateFrom = shiftDate(30);
   if (name === 'recent90') f.dateFrom = shiftDate(90);
   if (name === 'recent180') f.dateFrom = shiftDate(180);
-  if (name === 'nanshan-weekly') f.sources = [DICT.source.indexOf('品房君周报')];
+  if (name === 'nanshan') f.districts = [DICT.district.indexOf('南山区')];
   if (name === 'haggle10') f.negMax = -10;
   if (name === 'small') f.areaMax = 60;
   if (name === 'core90') { f.areaMin = 60; f.areaMax = 90; }
@@ -233,8 +232,8 @@ function markOf(r) {
   if (!conf && !n) return null;
   const s = el('span', 'mark', conf ? (conf === 'high' ? '重复' : '疑似重复') : '可能重复');
   s.title = conf
-    ? `与另一来源的记录判为同一笔（置信度 ${conf}），可切换去重口径排除`
-    : `另有 ${n} 条来自另一来源的候选记录，但无法证实是否同一笔`;
+    ? `可能与其他记录为同一笔成交（置信度 ${conf}），可切换「去重口径」排除`
+    : `另有 ${n} 条疑似同一笔成交的记录，但无法证实`;
   return s;
 }
 
@@ -250,8 +249,7 @@ function card(r) {
     update();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-  top.append(name, el('span', `badge ${r[C.source] === DICT.source.indexOf('行舟双周') ? 'b-a' : 'b-b'}`,
-    DICT.source[r[C.source]]));
+  top.append(name);
   a.append(top);
 
   const meta = el('div', 'meta');
@@ -261,6 +259,7 @@ function card(r) {
     DICT.layout[r[C.layout]],
     DICT.facing[r[C.facing]],
     r[C.built_year] ? `${fmtInt(r[C.built_year])} 年建成` : null,
+    r[C.date] || null,
   ].filter(Boolean);
   for (const p of parts) meta.append(el('span', null, p));
   a.append(meta);
@@ -276,21 +275,12 @@ function card(r) {
   }
   a.append(price);
 
-  const foot = el('div', 'foot');
-  foot.append(el('span', null, r[C.date] || '—'));
-  const right = el('span');
   const m = markOf(r);
-  if (m) right.append(m, document.createTextNode(' '));
-  if (DICT.note[r[C.note]]) {
-    const link = el('a', 'link', '原笔记');
-    link.href = DICT.note[r[C.note]].url;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.title = `${DICT.note[r[C.note]].title}（${DICT.note[r[C.note]].author}）`;
-    right.append(link);
+  if (m) {
+    const foot = el('div', 'foot');
+    foot.append(el('span', null, ''), m);
+    a.append(foot);
   }
-  foot.append(right);
-  a.append(foot);
   return a;
 }
 

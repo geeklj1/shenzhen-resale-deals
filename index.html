@@ -136,7 +136,7 @@ input[type=text],input[type=number],input[type=date]{width:100%;padding:11px 12p
   <button data-preset="recent30">近 1 个月</button>
   <button data-preset="recent90">近 3 个月</button>
   <button data-preset="recent180">近 6 个月</button>
-  <button data-preset="nanshan-weekly">南山周报</button>
+  <button data-preset="nanshan">南山区</button>
   <button data-preset="haggle10">砍价≥10%</button>
   <button data-preset="bargain-hunt">捡漏 ≤1000万</button>
   <button data-preset="core90">刚需 60–90㎡</button>
@@ -178,12 +178,12 @@ input[type=text],input[type=number],input[type=date]{width:100%;padding:11px 12p
 <div class="note">
   <details>
     <summary>数据说明与口径</summary>
-    <p>来自小红书两位博主的公开成交整理：<em>行舟深房笔记</em>（全市半月）与 <em>深圳品房君</em>（南山周报），
-    经表格截图 OCR 与一致性校验结构化，<strong>非官方备案数据</strong>。</p>
-    <p>行舟口径为部分大中介成交，含少量公寓/商办/宿舍；双拼房源可能被拆成两条（需相加）。
-    品房君周报无逐行成交日期，这里用统计期起始日代替，且无谈价率。</p>
-    <p>「谈价率」= 相对最后一次挂盘价的差值（负数即砍价）。「可能重复」表示另一来源有候选记录、
-    但无法证实是否同一笔（判定依据见数据集 QUALITY 文档）。</p>
+    <p>本页为<strong>公开渠道整理的成交记录汇编</strong>，经图表识别与一致性校验后结构化，<strong>非官方备案数据</strong>。
+    样本覆盖面有限，请以价格分布与趋势为主要参考，不要当作全市成交量。</p>
+    <p>部分记录来自大型中介的成交整理，含少量公寓/商办/宿舍；双拼房源可能被拆成两条（需相加）。
+    部分记录没有逐行成交日期，用其统计期的起始日代替。</p>
+    <p>「谈价率」= 相对最后一次挂盘价的差值（负数即砍价）。「可能重复」表示可能存在同一笔成交的另一条记录，
+    可用上方「去重口径」切换是否排除。</p>
   </details>
 </div>
 
@@ -221,7 +221,7 @@ input[type=text],input[type=number],input[type=date]{width:100%;padding:11px 12p
           <span>~</span><input id="builtMax" type="number" inputmode="numeric" placeholder="如 2020"></div>
       </div>
       <div class="field span2">
-        <label>谈价率 %（负数=砍价，仅行舟有）</label>
+        <label>谈价率 %（负数=砍价）</label>
         <div class="rng"><input id="negMin" type="number" inputmode="decimal" placeholder="如 -30">
           <span>~</span><input id="negMax" type="number" inputmode="decimal" placeholder="如 -10"></div>
       </div>
@@ -234,11 +234,7 @@ input[type=text],input[type=number],input[type=date]{width:100%;padding:11px 12p
         <div class="chips" id="rooms"></div>
       </div>
       <div class="field span2">
-        <label class="legend">来源</label>
-        <div class="chips" id="sources"></div>
-      </div>
-      <div class="field span2">
-        <label class="legend">朝向（仅品房君有）</label>
+        <label class="legend">朝向</label>
         <div class="chips" id="facings"></div>
       </div>
       <div class="field span2">
