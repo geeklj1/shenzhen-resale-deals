@@ -211,26 +211,37 @@ function applyPreset(name) {
 function renderStats(s) {
   const box = $('#stats');
   box.textContent = '';
-  const items = [
-    ['命中', `${s.count.toLocaleString()} 条`],
-    ['中位单价', s.medianUnit === null ? '—' : `${fmt(s.medianUnit)} 万/㎡`],
-    ['中位总价', s.medianTotal === null ? '—' : `${fmt(s.medianTotal, 0)} 万`],
-    ['中位面积', s.medianArea === null ? '—' : `${fmt(s.medianArea, 1)} ㎡`],
-    ['总价区间', `${fmt(s.minTotal, 0)}–${fmt(s.maxTotal, 0)} 万`],
-    ['日期', `${(s.dateFrom || '—').slice(2)} ~ ${(s.dateTo || '—').slice(2)}`],
-  ];
-  for (const [k, v] of items) {
-    const c = el('div', 'sumchip');
-    c.append(el('div', 'k', k), el('div', 'v', v));
-    box.append(c);
-  }
+  const vEl = (text, small) => {
+    const d = el('div', 'v', text);
+    if (small) d.append(el('small', null, small));
+    return d;
+  };
+  const chip = (k, v, lead) => {
+    const c = el('div', `sumchip${lead ? ' lead' : ''}`);
+    c.append(el('div', 'k', k), v);
+    return c;
+  };
+  const grid = el('div', 'statgrid');
+  grid.append(
+    chip('命中', vEl(s.count.toLocaleString(), '套'), true),
+    chip('中位单价', vEl(fmt(s.medianUnit), '万/㎡'), true),
+    chip('中位总价', vEl(fmt(s.medianTotal, 0), '万')),
+    chip('中位面积', vEl(fmt(s.medianArea, 1), '㎡')),
+  );
+  box.append(grid);
+  const line = el('div', 'sumline');
+  line.append(
+    el('span', null, `总价 ${fmt(s.minTotal, 0)}–${fmt(s.maxTotal, 0)} 万`),
+    el('span', null, `成交日期 ${s.dateFrom || '—'} ~ ${s.dateTo || '—'}`),
+  );
+  box.append(line);
 }
 
 function markOf(r) {
   const conf = DICT.dup_conf[r[C.dup_conf]];
   const n = r[C.dup_candidates];
   if (!conf && !n) return null;
-  const s = el('span', 'mark', conf ? (conf === 'high' ? '重复' : '疑似重复') : '可能重复');
+  const s = el('span', 'tag dup', conf ? (conf === 'high' ? '疑似重复' : '可能重复') : '可能重复');
   s.title = conf
     ? `可能与其他记录为同一笔成交（置信度 ${conf}），可切换「去重口径」排除`
     : `另有 ${n} 条疑似同一笔成交的记录，但无法证实`;
@@ -241,7 +252,8 @@ function card(r) {
   const a = el('article', 'card');
   a.dataset.unit = r[C.unit] === null ? '' : r[C.unit];
   a.dataset.community = DICT.community[r[C.community]] || '';
-  const top = el('div', 'top');
+
+  const row1 = el('div', 'row1');
   const name = el('div', 'name', DICT.community[r[C.community]] || '（未标注小区）');
   name.addEventListener('click', () => {
     FILTERS.q = DICT.community[r[C.community]] || '';
@@ -249,19 +261,16 @@ function card(r) {
     update();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-  top.append(name);
-  a.append(top);
+  row1.append(name, el('span', 'date', r[C.date] || '—'));
+  a.append(row1);
 
   const meta = el('div', 'meta');
-  const parts = [
-    [DICT.district[r[C.district]], DICT.area_group[r[C.area_group]]].filter(Boolean).join(' · '),
-    r[C.area] === null ? null : `${fmt(r[C.area], 1)} ㎡`,
-    DICT.layout[r[C.layout]],
-    DICT.facing[r[C.facing]],
-    r[C.built_year] ? `${fmtInt(r[C.built_year])} 年建成` : null,
-    r[C.date] || null,
-  ].filter(Boolean);
-  for (const p of parts) meta.append(el('span', null, p));
+  const loc = [DICT.district[r[C.district]], DICT.area_group[r[C.area_group]]].filter(Boolean).join(' · ');
+  if (loc) meta.append(el('span', 'spec loc', loc));
+  if (DICT.layout[r[C.layout]]) meta.append(el('span', 'spec', DICT.layout[r[C.layout]]));
+  if (r[C.area] !== null) meta.append(el('span', 'spec', `${fmt(r[C.area], 1)} ㎡`));
+  if (DICT.facing[r[C.facing]]) meta.append(el('span', 'spec', DICT.facing[r[C.facing]]));
+  if (r[C.built_year]) meta.append(el('span', 'spec', `${fmtInt(r[C.built_year])} 年建成`));
   a.append(meta);
 
   const price = el('div', 'price');
@@ -270,16 +279,16 @@ function card(r) {
   price.append(total);
   if (r[C.unit] !== null) price.append(el('span', 'unit', `${fmt(r[C.unit])} 万/㎡`));
   const neg = r[C.neg];
-  if (neg !== null && neg !== undefined) {
-    price.append(el('span', neg <= -10 ? 'neg strong' : 'neg', `砍价 ${fmt(neg, 2)}%`));
+  if (neg !== null && neg !== undefined && neg < 0) {
+    price.append(el('span', 'neg', `砍价 ${Math.abs(neg).toFixed(2)}%`));
   }
   a.append(price);
 
   const m = markOf(r);
   if (m) {
-    const foot = el('div', 'foot');
-    foot.append(el('span', null, ''), m);
-    a.append(foot);
+    const tags = el('div', 'tags');
+    tags.append(m);
+    a.append(tags);
   }
   return a;
 }
@@ -301,7 +310,10 @@ function render() {
     for (const r of page) frag.append(card(r));
     list.append(frag);
   }
-  $('#count').textContent = `命中 ${FILTERED.length.toLocaleString()} 条 · 已显示 ${Math.min(page.length, FILTERED.length)}`;
+  const shown = Math.min(page.length, FILTERED.length);
+  $('#count').textContent = '';
+  const b1 = el('b', null, FILTERED.length.toLocaleString());
+  $('#count').append('命中 ', b1, ` 条 · 已显示 ${shown}`);
   $('#moreBtn').style.display = FILTERED.length > page.length ? '' : 'none';
   const n = activeFilterCount();
   const badge = $('#activeCount');
@@ -340,8 +352,7 @@ async function boot() {
   FILTERS.limit = PAGE_FIRST;
   const dates = ROWS.map((r) => r[C.date]).filter(Boolean).sort();
   MAX_DATE = dates[dates.length - 1] || '';
-  $('#meta').textContent = `${doc.count.toLocaleString()} 条成交 · ${DICT.community.filter(Boolean).length.toLocaleString()} 小区 · `
-    + `${DICT.area_group.filter(Boolean).length} 片区 · ${dates[0]}~${MAX_DATE}`;
+  $('#meta').textContent = `${doc.count.toLocaleString()} 条成交 · ${DICT.community.filter(Boolean).length.toLocaleString()} 小区 · ${DICT.area_group.filter(Boolean).length} 片区`;
   initControls();
   update();
   setupAutoLoad();
