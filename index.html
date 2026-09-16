@@ -2,258 +2,262 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>深圳二手房成交查询</title>
-<meta name="description" content="深圳二手房成交记录快速筛选查询：13,460 条真实成交，按小区/片区/面积/总价/单价/砍价幅度/建成年份等条件秒筛，含中位单价走势与 CSV 导出（2025-04 ~ 2026-09）">
+<meta name="description" content="深圳二手房成交记录快速筛选查询：13,460 条真实成交，按小区/片区/面积/总价/单价/砍价幅度/建成年份等条件秒筛，含 CSV 导出（2025-04 ~ 2026-09）">
 <meta property="og:type" content="website">
 <meta property="og:title" content="深圳二手房成交查询">
-<meta property="og:description" content="13,460 条深圳二手房成交记录，按小区/片区/面积/总价/单价/砍价幅度等条件快速筛选，含走势图与 CSV 导出">
+<meta property="og:description" content="13,460 条深圳二手房成交记录，按小区/片区/面积/总价/单价/砍价幅度等条件快速筛选，含 CSV 导出">
 <meta property="og:image" content="https://geeklj1.github.io/shenzhen-resale-deals/og.png">
 <meta property="og:url" content="https://geeklj1.github.io/shenzhen-resale-deals/">
 <meta name="twitter:card" content="summary_large_image">
 <style>
 :root{
-  --bg:#f6f8fa; --panel:#fff; --line:#d0d7de; --text:#1f2328; --muted:#59636e;
-  --accent:#0969da; --accent-soft:#ddf4ff; --warn:#9a6700; --warn-bg:#fff8c5;
-  --ok:#1a7f37; --radius:8px;
+  --bg:#f2f4f7; --panel:#fff; --line:#e3e6ea; --text:#15181c; --muted:#68707b;
+  --accent:#0b63d6; --accent-soft:#e8f1ff; --ok:#0f7b3f; --warn:#8a5a00; --warn-bg:#fff6da;
+  --r:14px; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.1);
 }
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);
-  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
-header{padding:18px 20px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
-h1{margin:0 0 4px;font-size:19px}
-#meta{color:var(--muted);font-size:12.5px}
-main{padding:14px 20px 60px;max-width:1500px;margin:0 auto}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px}
-.presets{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px}
-.presets span.lbl{color:var(--muted);font-size:12.5px;margin-right:2px}
-button{font:inherit;padding:5px 11px;white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:var(--text)}
-button:hover{border-color:var(--accent);color:var(--accent)}
-button.p{background:var(--accent-soft);border-color:#b6e3ff;color:var(--accent)}
-details{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);margin-bottom:12px}
-summary{cursor:pointer;padding:10px 14px;font-weight:600;list-style:none}
-summary::-webkit-details-marker{display:none}
-summary:before{content:"▸ ";color:var(--muted)}
-details[open] summary:before{content:"▾ "}
-.filters{padding:0 14px 14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
-.field{display:flex;flex-direction:column;gap:5px}
-.field>label,.legend{font-size:12.5px;color:var(--muted);font-weight:600}
-input[type=text],input[type=number],input[type=date],select{
-  font:inherit;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--text);width:100%}
-.range{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.range{flex-wrap:wrap}
-.range input{flex:1 1 62px;width:auto;min-width:0}
-.range select{flex:1 1 118px;width:auto}
-.range span{flex:0 0 auto;color:var(--muted)}
-.range input[type=date]{min-width:142px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border:1px solid var(--line);
-  border-radius:999px;background:#fff;cursor:pointer;font-size:12.5px;user-select:none}
-.chip input{margin:0;accent-color:var(--accent)}
-.chip:has(input:checked){background:var(--accent-soft);border-color:#b6e3ff;color:var(--accent);font-weight:600}
-.radios{display:flex;flex-wrap:wrap;gap:10px;font-size:12.5px;align-items:center}
-.radios label{display:inline-flex;gap:4px;align-items:center;cursor:pointer}
-.stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-.stat{border:1px solid var(--line);border-radius:var(--radius);padding:6px 11px;background:var(--panel);min-width:104px}
-.stat-k{color:var(--muted);font-size:11.5px}
-.stat-v{font-weight:600;font-size:14px;white-space:nowrap}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  padding-bottom:env(safe-area-inset-bottom)}
+button,input,select{font:inherit;color:inherit}
+
+.appbar{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);
+  padding:calc(env(safe-area-inset-top) + 9px) 14px 9px}
+.appbar h1{margin:0;font-size:17px;font-weight:700}
+.appbar .sub{color:var(--muted);font-size:11.5px;margin-top:2px}
+
+.searchbar{position:sticky;top:calc(env(safe-area-inset-top) + 53px);z-index:19;background:var(--panel);
+  border-bottom:1px solid var(--line);padding:8px 14px 10px;display:flex;gap:8px}
+.searchbar input{flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#f7f8fa}
+#filterBtn{flex:0 0 auto;padding:11px 14px;border:1px solid var(--line);border-radius:11px;background:#fff;
+  font-weight:600;display:inline-flex;align-items:center;gap:6px}
+#filterBtn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+#activeCount{display:none;min-width:18px;height:18px;line-height:18px;padding:0 5px;border-radius:9px;
+  background:var(--accent);color:#fff;font-size:11px;text-align:center}
+#activeCount.show{display:inline-block}
+
+.presets{display:flex;gap:8px;overflow-x:auto;padding:10px 14px 4px;scrollbar-width:none}
+.presets::-webkit-scrollbar{display:none}
+.presets button{flex:0 0 auto;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px}
+.presets button.p{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+
+.summary{display:flex;gap:8px;overflow-x:auto;padding:8px 14px 2px;scrollbar-width:none}
+.summary::-webkit-scrollbar{display:none}
+.sumchip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:6px 11px}
+.sumchip .k{color:var(--muted);font-size:11px;white-space:nowrap}
+.sumchip .v{font-weight:700;font-size:14px;white-space:nowrap}
+
+.listbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px 6px}
 #count{color:var(--muted);font-size:12.5px}
-.tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
-.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);max-height:70vh}
-table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;white-space:nowrap}
-th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left}
-th{position:sticky;top:0;background:#f6f8fa;z-index:2;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none}
-th:hover{color:var(--accent)}
-tbody tr:hover{background:#f6f8fa}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
-td.strong{font-weight:600}
-.neg{color:var(--ok)}
-.badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11.5px;border:1px solid transparent}
-.b-a{background:#eef6ff;color:#0969da;border-color:#cfe6ff}
-.b-b{background:#f3eefc;color:#6f42c1;border-color:#e2d7f7}
-.mark{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;font-size:11px;
-  background:var(--warn-bg);color:var(--warn);border:1px solid #eed888;cursor:help}
-.link{color:var(--accent);text-decoration:none;cursor:pointer}
-.link:hover{text-decoration:underline}
-.link.src{font-size:11.5px;color:var(--muted)}
-.spark{width:100%;height:90px;display:block}
-.hint{color:var(--muted);font-size:12px;margin-top:4px}
-footer{color:var(--muted);font-size:12px;padding:0 20px 30px;max-width:1500px;margin:0 auto;line-height:1.7}
-@media(max-width:640px){
-  main{padding:10px 12px 40px}
-  h1{font-size:17px}
-  .stat{min-width:88px;padding:5px 9px}
-}
+.listbar .right{display:flex;gap:6px;align-items:center}
+.listbar select{padding:8px 9px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px}
+#dirBtn{padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px}
+
+.list{display:grid;grid-template-columns:1fr;gap:10px;padding:4px 14px 8px}
+@media(min-width:700px){.list{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;box-shadow:var(--shadow)}
+.card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.card .name{font-size:16px;font-weight:700;line-height:1.35}
+.card .meta{margin-top:5px;color:var(--muted);font-size:12.5px;display:flex;flex-wrap:wrap;gap:3px 9px}
+.card .price{margin-top:9px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card .total{font-size:21px;font-weight:800;letter-spacing:-.3px}
+.card .total small{font-size:12px;font-weight:600;color:var(--muted);margin-left:2px}
+.card .unit{font-size:13.5px;background:#f5f6f8;border-radius:8px;padding:2px 8px}
+.card .neg{font-size:13px;color:var(--ok);font-weight:600}
+.card .neg.strong{background:#e7f6ec;border-radius:8px;padding:2px 7px}
+.card .foot{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);display:flex;align-items:center;
+  justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-a{background:#eef4ff;color:#0b63d6}
+.b-b{background:#f4eefc;color:#6b3fc4}
+.mark{padding:1px 6px;border-radius:6px;font-size:11px;background:var(--warn-bg);color:var(--warn);border:1px solid #f0dfa8}
+.link{color:var(--accent);text-decoration:none}
+
+.listfoot{padding:6px 14px 4px;display:flex;gap:8px}
+.listfoot button{flex:1;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-weight:600}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;grid-column:1/-1}
+.empty button{margin-top:12px;padding:10px 18px;border:1px solid var(--line);border-radius:10px;background:#fff}
+
+.tail{padding:6px 14px 22px;display:flex;gap:8px}
+.tail button{flex:1;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.note{margin:0 14px 26px;color:var(--muted);font-size:12px;line-height:1.7}
+.note summary{cursor:pointer;font-weight:600;color:var(--text)}
+
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(12,16,22,.45);display:none}
+.sheet.open{display:block}
+.sheet-inner{position:absolute;left:0;right:0;bottom:0;max-height:90vh;overflow:auto;background:var(--panel);
+  border-radius:18px 18px 0 0;padding:14px 16px calc(env(safe-area-inset-bottom) + 14px);-webkit-overflow-scrolling:touch}
+@media(min-width:700px){.sheet-inner{left:auto;right:24px;bottom:24px;top:24px;width:620px;border-radius:16px;max-height:none}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sheet-head h2{margin:0;font-size:16px}
+.sheet-head .x{padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:419px){.fgrid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field.span2{grid-column:1/-1}
+.field>label,.legend{font-size:12.5px;color:var(--muted);font-weight:600}
+input[type=text],input[type=number],input[type=date]{width:100%;padding:11px 12px;border:1px solid var(--line);
+  border-radius:10px;background:#f7f8fa}
+.rng{display:flex;align-items:center;gap:6px}
+.rng input{flex:1 1 0;min-width:0;text-align:center}
+.rng span{color:var(--muted);flex:0 0 auto}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--line);
+  border-radius:999px;background:#fff;font-size:13px;user-select:none}
+.chip input{margin:0;accent-color:var(--accent)}
+.chip:has(input:checked){background:var(--accent-soft);border-color:#b7d4fb;color:var(--accent);font-weight:600}
+.radios{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;align-items:center}
+.radios label{display:inline-flex;align-items:center;gap:5px}
+.radios input{accent-color:var(--accent)}
+.sheet-actions{position:sticky;bottom:-14px;display:flex;gap:8px;margin-top:16px;padding:12px 0 4px;background:var(--panel)}
+.sheet-actions button{flex:1;padding:14px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:600}
+.sheet-actions button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 </style>
 </head>
 <body>
-<header>
+
+<header class="appbar">
   <h1>深圳二手房成交查询</h1>
-  <div id="meta">正在加载数据…</div>
+  <div class="sub" id="meta">正在加载数据…</div>
 </header>
 
-<main>
-  <div class="presets" id="presetBox">
-    <span class="lbl">快速筛选</span>
-    <button class="p" data-preset="all">全部</button>
-    <button data-preset="recent30">近 1 个月</button>
-    <button data-preset="recent90">近 3 个月</button>
-    <button data-preset="recent180">近 6 个月</button>
-    <button data-preset="nanshan-weekly">南山周报</button>
-    <button data-preset="haggle10">砍价 ≥10%</button>
-    <button data-preset="bargain-hunt">捡漏：砍价≥15% 且 ≤1000万</button>
-    <button data-preset="core90">刚需 60–90㎡</button>
-    <button data-preset="small">小户型 ≤60㎡</button>
-  </div>
+<div class="searchbar">
+  <input id="q" type="search" inputmode="search" placeholder="搜小区 / 片区 / 区" aria-label="关键词">
+  <button id="filterBtn" aria-expanded="false">筛选<span id="activeCount">0</span></button>
+</div>
 
-  <details open>
-    <summary>筛选条件</summary>
-    <div class="filters">
-      <div class="grid">
-        <div class="field">
-          <label for="q">关键词（小区 / 片区 / 区）</label>
-          <input id="q" type="text" placeholder="如：观海台、后海、南山">
-        </div>
-        <div class="field">
-          <label for="groups">片区（可多选，空格分隔）</label>
-          <input id="groups" type="text" list="groupList" placeholder="如：后海 蛇口 科技园">
-          <datalist id="groupList"></datalist>
-        </div>
-        <div class="field">
-          <label>成交日期</label>
-          <input id="dateFrom" type="date" aria-label="起始日期">
-          <input id="dateTo" type="date" aria-label="结束日期">
-        </div>
-        <div class="field">
-          <label>面积 (㎡)</label>
-          <div class="range"><input id="areaMin" type="number" placeholder="最小"><span>~</span><input id="areaMax" type="number" placeholder="最大"></div>
-        </div>
-        <div class="field">
-          <label>总价 (万)</label>
-          <div class="range"><input id="totalMin" type="number" placeholder="最小"><span>~</span><input id="totalMax" type="number" placeholder="最大"></div>
-        </div>
-        <div class="field">
-          <label>单价 (万/㎡)</label>
-          <div class="range"><input id="unitMin" type="number" step="0.1" placeholder="最小"><span>~</span><input id="unitMax" type="number" step="0.1" placeholder="最大"></div>
-        </div>
-        <div class="field">
-          <label>建成年份</label>
-          <div class="range"><input id="builtMin" type="number" placeholder="如 2005"><span>~</span><input id="builtMax" type="number" placeholder="如 2020"></div>
-        </div>
-        <div class="field">
-          <label>谈价率 %（负数=砍价，仅行舟有）</label>
-          <div class="range"><input id="negMin" type="number" placeholder="如 -30"><span>~</span><input id="negMax" type="number" placeholder="如 -10"></div>
-        </div>
-        <div class="field">
-          <label>行政区</label>
-          <div class="chips" id="districts"></div>
-        </div>
-        <div class="field">
-          <label>房数</label>
-          <div class="chips" id="rooms"></div>
-        </div>
-        <div class="field">
-          <label>来源</label>
-          <div class="chips" id="sources"></div>
-        </div>
-        <div class="field">
-          <label>朝向（仅品房君有）</label>
-          <div class="chips" id="facings"></div>
-        </div>
-        <div class="field">
-          <label>去重口径</label>
-          <div class="radios">
-            <label><input type="radio" name="dedupe" value="raw">原始</label>
-            <label><input type="radio" name="dedupe" value="strict">严格并集</label>
-            <label><input type="radio" name="dedupe" value="loose">宽松并集</label>
-            <label><input type="checkbox" id="onlyDup">只看可能重复</label>
-          </div>
-        </div>
-        <div class="field">
-          <label>排序 / 操作</label>
-          <div class="range">
-            <select id="sort">
-              <option value="date">成交日期</option>
-              <option value="unit">单价</option>
-              <option value="total">总价</option>
-              <option value="area">面积</option>
-              <option value="neg">谈价率</option>
-              <option value="community">小区</option>
-              <option value="district">行政区</option>
-              <option value="area_group">片区</option>
-              <option value="built_year">建成年份</option>
-              <option value="facing">朝向</option>
-            </select>
-            <button id="dirBtn">降序 ↓</button>
-            <button id="resetBtn">重置</button>
-          </div>
+<div class="presets" id="presetBox">
+  <button class="p" data-preset="all">全部</button>
+  <button data-preset="recent30">近 1 个月</button>
+  <button data-preset="recent90">近 3 个月</button>
+  <button data-preset="recent180">近 6 个月</button>
+  <button data-preset="nanshan-weekly">南山周报</button>
+  <button data-preset="haggle10">砍价≥10%</button>
+  <button data-preset="bargain-hunt">捡漏 ≤1000万</button>
+  <button data-preset="core90">刚需 60–90㎡</button>
+  <button data-preset="small">小户型 ≤60㎡</button>
+</div>
+
+<div class="summary" id="stats"></div>
+
+<div class="listbar">
+  <span id="count"></span>
+  <span class="right">
+    <select id="sort" aria-label="排序">
+      <option value="date">成交日期</option>
+      <option value="unit">单价</option>
+      <option value="total">总价</option>
+      <option value="area">面积</option>
+      <option value="neg">谈价率</option>
+      <option value="community">小区</option>
+      <option value="district">行政区</option>
+      <option value="area_group">片区</option>
+      <option value="built_year">建成年份</option>
+      <option value="facing">朝向</option>
+    </select>
+    <button id="dirBtn">↓</button>
+  </span>
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="listfoot">
+  <button id="moreBtn">加载更多</button>
+</div>
+
+<div class="tail">
+  <button id="exportBtn">导出 CSV</button>
+  <button id="shareBtn">复制筛选链接</button>
+</div>
+
+<div class="note">
+  <details>
+    <summary>数据说明与口径</summary>
+    <p>来自小红书两位博主的公开成交整理：<em>行舟深房笔记</em>（全市半月）与 <em>深圳品房君</em>（南山周报），
+    经表格截图 OCR 与一致性校验结构化，<strong>非官方备案数据</strong>。</p>
+    <p>行舟口径为部分大中介成交，含少量公寓/商办/宿舍；双拼房源可能被拆成两条（需相加）。
+    品房君周报无逐行成交日期，这里用统计期起始日代替，且无谈价率。</p>
+    <p>「谈价率」= 相对最后一次挂盘价的差值（负数即砍价）。「可能重复」表示另一来源有候选记录、
+    但无法证实是否同一笔（判定依据见数据集 QUALITY 文档）。</p>
+  </details>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="筛选条件">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2>筛选条件</h2>
+      <button class="x" id="closeSheet">收起</button>
+    </div>
+    <div class="fgrid">
+      <div class="field span2">
+        <label for="groups">片区（可多选，空格分隔）</label>
+        <input id="groups" type="text" list="groupList" placeholder="如：后海 蛇口 科技园">
+        <datalist id="groupList"></datalist>
+      </div>
+      <div class="field">
+        <label>成交日期</label>
+        <input id="dateFrom" type="date" aria-label="起始日期">
+        <input id="dateTo" type="date" aria-label="结束日期">
+      </div>
+      <div class="field">
+        <label>面积 (㎡)</label>
+        <div class="rng"><input id="areaMin" type="number" inputmode="decimal" placeholder="最小">
+          <span>~</span><input id="areaMax" type="number" inputmode="decimal" placeholder="最大"></div>
+        <label>总价 (万)</label>
+        <div class="rng"><input id="totalMin" type="number" inputmode="decimal" placeholder="最小">
+          <span>~</span><input id="totalMax" type="number" inputmode="decimal" placeholder="最大"></div>
+      </div>
+      <div class="field">
+        <label>单价 (万/㎡)</label>
+        <div class="rng"><input id="unitMin" type="number" inputmode="decimal" step="0.1" placeholder="最小">
+          <span>~</span><input id="unitMax" type="number" inputmode="decimal" step="0.1" placeholder="最大"></div>
+        <label>建成年份</label>
+        <div class="rng"><input id="builtMin" type="number" inputmode="numeric" placeholder="如 2005">
+          <span>~</span><input id="builtMax" type="number" inputmode="numeric" placeholder="如 2020"></div>
+      </div>
+      <div class="field span2">
+        <label>谈价率 %（负数=砍价，仅行舟有）</label>
+        <div class="rng"><input id="negMin" type="number" inputmode="decimal" placeholder="如 -30">
+          <span>~</span><input id="negMax" type="number" inputmode="decimal" placeholder="如 -10"></div>
+      </div>
+      <div class="field span2">
+        <label class="legend">行政区</label>
+        <div class="chips" id="districts"></div>
+      </div>
+      <div class="field span2">
+        <label class="legend">房数</label>
+        <div class="chips" id="rooms"></div>
+      </div>
+      <div class="field span2">
+        <label class="legend">来源</label>
+        <div class="chips" id="sources"></div>
+      </div>
+      <div class="field span2">
+        <label class="legend">朝向（仅品房君有）</label>
+        <div class="chips" id="facings"></div>
+      </div>
+      <div class="field span2">
+        <label class="legend">去重口径</label>
+        <div class="radios">
+          <label><input type="radio" name="dedupe" value="raw">原始</label>
+          <label><input type="radio" name="dedupe" value="strict">严格并集</label>
+          <label><input type="radio" name="dedupe" value="loose">宽松并集</label>
+          <label><input type="checkbox" id="onlyDup">只看可能重复</label>
         </div>
       </div>
     </div>
-  </details>
-
-  <div class="stats" id="stats"></div>
-
-  <div class="panel">
-    <div id="trend"></div>
-  </div>
-
-  <div class="toolbar">
-    <div id="count"></div>
-    <div class="tools">
-      <button id="exportBtn">导出 CSV</button>
-      <button id="shareBtn">复制筛选链接</button>
-      <button id="moreBtn">显示更多</button>
+    <div class="sheet-actions">
+      <button id="resetBtn">重置</button>
+      <button class="primary" id="applyBtn">查看结果</button>
     </div>
   </div>
-
-  <div class="tablewrap">
-    <table>
-      <thead>
-        <tr>
-          <th data-sort="date">成交日期</th>
-          <th data-sort="source">来源</th>
-          <th data-sort="district">区</th>
-          <th data-sort="area_group">片区</th>
-          <th data-sort="community">小区</th>
-          <th data-sort="built_year">建成</th>
-          <th data-sort="layout">户型</th>
-          <th data-sort="area">面积㎡</th>
-          <th data-sort="total">总价万</th>
-          <th data-sort="unit">单价万/㎡</th>
-          <th data-sort="negotiate">谈价率</th>
-          <th data-sort="facing">朝向</th>
-          <th>标记 / 出处</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-
-  <footer>
-    <strong>数据说明</strong>：来自小红书两位博主的公开成交整理（<em>行舟深房笔记</em> 全市半月、<em>深圳品房君</em> 南山周报），
-    经表格截图 OCR + 一致性校验结构化，<strong>非官方备案数据</strong>。<br>
-    行舟口径为部分大中介成交，含少量公寓/商办/宿舍，双拼房源可能被拆成两条（需相加）；品房君周报无逐行成交日期，本页用统计期起始日代替，且无谈价率。<br>
-    「谈价率」是相对最后一次挂盘价的差值。「可能重复」表示另一来源有候选记录但无法证实是否同一笔（详见数据说明文档）。
-  </footer>
-</main>
+</div>
 
 <script type="module" src="app.js"></script>
-<script>
-document.querySelector('thead').addEventListener('click', (e) => {
-  const th = e.target.closest('th[data-sort]');
-  if (!th) return;
-  const key = th.dataset.sort === 'built_year' ? 'built_year'
-    : th.dataset.sort === 'negotiate' ? 'neg' : th.dataset.sort;
-  const map = { built_year: 'built_year', neg: 'neg', date: 'date', source: 'source',
-    district: 'district', area_group: 'area_group', community: 'community',
-    layout: 'layout', area: 'area', total: 'total', unit: 'unit', facing: 'facing' };
-  const s = map[key] || 'date';
-  const sel = document.querySelector('#sort');
-  if (sel.value !== s) { sel.value = s; sel.dispatchEvent(new Event('change')); }
-});
-</script>
 </body>
 </html>

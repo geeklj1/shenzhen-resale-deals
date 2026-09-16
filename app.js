@@ -1,5 +1,5 @@
 import {
-  C, DEFAULTS, applyFilters, sortRows, summarize, trendByPeriod, toCSV, roomsOf,
+  C, DEFAULTS, applyFilters, sortRows, summarize, toCSV,
 } from './core.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -17,11 +17,14 @@ let ROWS = [];
 let FILTERS = { ...DEFAULTS };
 let FILTERED = [];
 let MAX_DATE = '';
+let observer = null;
 
+const PAGE_FIRST = 60;
+const PAGE_STEP = 120;
 const NUM_FIELDS = ['areaMin', 'areaMax', 'totalMin', 'totalMax', 'unitMin', 'unitMax',
   'builtMin', 'builtMax', 'negMin', 'negMax'];
 
-/* ---------- 过滤器 ⇄ URL ---------- */
+/* ---------- 筛选状态 ⇄ URL ---------- */
 function filtersToHash() {
   const p = new URLSearchParams();
   for (const [k, v] of Object.entries(FILTERS)) {
@@ -44,16 +47,13 @@ function hashToFilters() {
   return f;
 }
 
-/* ---------- 过滤器控件 ---------- */
+/* ---------- 控件 ---------- */
 function chipGroup(host, values, key, labels) {
   host.textContent = '';
   values.forEach((v, i) => {
-    const id = `${key}-${i}`;
-    const wrap = el('label', 'chip');
     const cb = el('input');
     cb.type = 'checkbox';
     cb.value = String(v);
-    cb.id = id;
     if (FILTERS[key].includes(v)) cb.checked = true;
     cb.addEventListener('change', () => {
       const set = new Set(FILTERS[key]);
@@ -61,6 +61,7 @@ function chipGroup(host, values, key, labels) {
       FILTERS[key] = [...set];
       update();
     });
+    const wrap = el('label', 'chip');
     wrap.append(cb, el('span', null, labels ? labels[i] : String(v)));
     host.append(wrap);
   });
@@ -74,7 +75,6 @@ function bindNumber(id, key) {
     update();
   });
 }
-
 function bindDate(id, key) {
   const input = $(id);
   input.value = FILTERS[key] || '';
@@ -85,7 +85,7 @@ function initControls() {
   chipGroup($('#districts'), DICT.district.map((_, i) => i), 'districts', DICT.district);
   chipGroup($('#sources'), DICT.source.map((_, i) => i), 'sources', DICT.source);
   chipGroup($('#rooms'), [1, 2, 3, 4, 5, 6], 'rooms', ['1室', '2室', '3室', '4室', '5室', '6室+']);
-  // 朝向按位掩码筛选：东1 南2 西4 北8 东南16 西南32 东北64 西北128，0=未标注
+  // 朝向按位掩码：东1 南2 西4 北8 东南16 西南32 东北64 西北128，0=未标注
   chipGroup($('#facings'), [0, 1, 2, 4, 8, 16, 32, 64, 128], 'facings',
     ['未标注', '东', '南', '西', '北', '东南', '西南', '东北', '西北']);
 
@@ -101,9 +101,7 @@ function initControls() {
   gInput.value = FILTERS.area_groups.map((i) => DICT.area_group[i]).join(' ');
   gInput.addEventListener('input', () => {
     const names = gInput.value.split(/[\s,，、]+/).filter(Boolean);
-    FILTERS.area_groups = names
-      .map((n) => DICT.area_group.findIndex((g) => g === n))
-      .filter((i) => i >= 0);
+    FILTERS.area_groups = names.map((n) => DICT.area_group.findIndex((g) => g === n)).filter((i) => i >= 0);
     update();
   });
 
@@ -111,8 +109,7 @@ function initControls() {
   q.value = FILTERS.q;
   q.addEventListener('input', () => { FILTERS.q = q.value.trim(); update(); });
 
-  bindDate('#dateFrom', 'dateFrom');
-  bindDate('#dateTo', 'dateTo');
+  bindDate('#dateFrom', 'dateFrom'); bindDate('#dateTo', 'dateTo');
   bindNumber('#areaMin', 'areaMin'); bindNumber('#areaMax', 'areaMax');
   bindNumber('#totalMin', 'totalMin'); bindNumber('#totalMax', 'totalMax');
   bindNumber('#unitMin', 'unitMin'); bindNumber('#unitMax', 'unitMax');
@@ -131,10 +128,10 @@ function initControls() {
   sortSel.value = FILTERS.sort;
   sortSel.addEventListener('change', () => { FILTERS.sort = sortSel.value; update(); });
   const dirBtn = $('#dirBtn');
-  dirBtn.textContent = FILTERS.dir === 'desc' ? '降序 ↓' : '升序 ↑';
+  dirBtn.textContent = FILTERS.dir === 'desc' ? '↓' : '↑';
   dirBtn.addEventListener('click', () => {
     FILTERS.dir = FILTERS.dir === 'desc' ? 'asc' : 'desc';
-    dirBtn.textContent = FILTERS.dir === 'desc' ? '降序 ↓' : '升序 ↑';
+    dirBtn.textContent = FILTERS.dir === 'desc' ? '↓' : '↑';
     update();
   });
 
@@ -144,27 +141,48 @@ function initControls() {
     initControls();
     update();
   });
-  $('#moreBtn').addEventListener('click', () => { FILTERS.limit += 300; render(); });
+  $('#moreBtn').addEventListener('click', loadMore);
+  $('#filterBtn').addEventListener('click', () => openSheet(true));
+  $('#closeSheet').addEventListener('click', () => openSheet(false));
+  $('#applyBtn').addEventListener('click', () => openSheet(false));
+  $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') openSheet(false); });
   $('#exportBtn').addEventListener('click', () => {
-    const csv = '\uFEFF' + toCSV(FILTERED, DICT);
+    // 导出「当前筛选的全部结果」，而不只是已加载的那些
+    const all = sortRows(applyFilters(ROWS, { ...FILTERS, __dict: DICT }), FILTERS.sort, FILTERS.dir, DICT);
+    const csv = '\uFEFF' + toCSV(all, DICT);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = el('a');
     a.href = url;
-    a.download = `深圳二手房成交_${FILTERED.length}条.csv`;
+    a.download = `深圳二手房成交_${all.length}条.csv`;
     a.click();
     URL.revokeObjectURL(url);
   });
   $('#shareBtn').addEventListener('click', async () => {
     const url = `${location.origin}${location.pathname}#${filtersToHash()}`;
-    try { await navigator.clipboard.writeText(url); $('#shareBtn').textContent = '已复制链接'; }
+    try { await navigator.clipboard.writeText(url); $('#shareBtn').textContent = '已复制 ✓'; }
     catch { $('#shareBtn').textContent = url; }
-    setTimeout(() => { $('#shareBtn').textContent = '复制筛选链接'; }, 1500);
+    setTimeout(() => { $('#shareBtn').textContent = '复制筛选链接'; }, 1600);
   });
   $('#presetBox').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-preset]');
-    if (!b) return;
-    applyPreset(b.dataset.preset);
+    if (b) applyPreset(b.dataset.preset);
   });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openSheet(false); });
+}
+
+function openSheet(open) {
+  $('#sheet').classList.toggle('open', open);
+  $('#filterBtn').setAttribute('aria-expanded', String(open));
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+function activeFilterCount() {
+  let n = 0;
+  for (const k of ['districts', 'area_groups', 'sources', 'rooms', 'facings']) if (FILTERS[k].length) n++;
+  for (const k of [...NUM_FIELDS, 'dateFrom', 'dateTo']) if (FILTERS[k] !== null && FILTERS[k] !== '') n++;
+  if (FILTERS.dedupe !== 'raw') n++;
+  if (FILTERS.onlyDupCandidates) n++;
+  return n;
 }
 
 function shiftDate(days) {
@@ -186,159 +204,159 @@ function applyPreset(name) {
   FILTERS = f;
   location.hash = filtersToHash();
   initControls();
+  document.querySelectorAll('#presetBox button').forEach((b) => b.classList.toggle('p', b.dataset.preset === name));
   update();
 }
 
-/* ---------- 渲染 ---------- */
+/* ---------- 展示 ---------- */
 function renderStats(s) {
   const box = $('#stats');
   box.textContent = '';
   const items = [
-    ['条数', `${s.count.toLocaleString()}`],
-    ['中位单价', `${fmt(s.medianUnit)} 万/㎡`],
-    ['均价(单价)', `${fmt(s.meanUnit)} 万/㎡`],
-    ['中位面积', `${fmt(s.medianArea, 1)} ㎡`],
-    ['中位总价', `${fmt(s.medianTotal, 1)} 万`],
-    ['价格范围', `${fmt(s.minTotal, 0)}–${fmt(s.maxTotal, 0)} 万`],
-    ['日期范围', `${s.dateFrom || '—'} ~ ${s.dateTo || '—'}`],
+    ['命中', `${s.count.toLocaleString()} 条`],
+    ['中位单价', s.medianUnit === null ? '—' : `${fmt(s.medianUnit)} 万/㎡`],
+    ['中位总价', s.medianTotal === null ? '—' : `${fmt(s.medianTotal, 0)} 万`],
+    ['中位面积', s.medianArea === null ? '—' : `${fmt(s.medianArea, 1)} ㎡`],
+    ['总价区间', `${fmt(s.minTotal, 0)}–${fmt(s.maxTotal, 0)} 万`],
+    ['日期', `${(s.dateFrom || '—').slice(2)} ~ ${(s.dateTo || '—').slice(2)}`],
   ];
   for (const [k, v] of items) {
-    const c = el('div', 'stat');
-    c.append(el('div', 'stat-k', k), el('div', 'stat-v', v));
+    const c = el('div', 'sumchip');
+    c.append(el('div', 'k', k), el('div', 'v', v));
     box.append(c);
   }
-  const src = el('div', 'stat');
-  src.append(el('div', 'stat-k', '来源构成'),
-    el('div', 'stat-v', Object.entries(s.bySource).map(([k, v]) => `${k} ${v}`).join(' · ') || '—'));
-  box.append(src);
 }
 
-function renderTrend() {
-  const host = $('#trend');
-  host.textContent = '';
-  const t = trendByPeriod(FILTERED, DICT);
-  const multiSource = new Set(FILTERED.map((r) => r[C.source])).size > 1;
-  if (t.length < 2) { host.append(el('div', 'hint', '统计期不足 2 个，无法画走势')); return; }
-  const w = host.clientWidth || 700, h = 90, pad = 6;
-  const vals = t.map((p) => p.medianUnit).filter((v) => v !== null);
-  const lo = Math.min(...vals), hi = Math.max(...vals);
-  const x = (i) => pad + (i * (w - pad * 2)) / Math.max(t.length - 1, 1);
-  const y = (v) => h - pad - ((v - lo) / Math.max(hi - lo, 0.01)) * (h - pad * 2);
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('class', 'spark');
-  const path = document.createElementNS(svg.namespaceURI, 'path');
-  path.setAttribute('d', t.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.medianUnit).toFixed(1)}`).join(' '));
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', '#2f81f7');
-  path.setAttribute('stroke-width', '2');
-  svg.append(path);
-  t.forEach((p, i) => {
-    const c = document.createElementNS(svg.namespaceURI, 'circle');
-    c.setAttribute('cx', x(i)); c.setAttribute('cy', y(p.medianUnit)); c.setAttribute('r', 2.5);
-    c.setAttribute('fill', '#2f81f7');
-    const title = document.createElementNS(svg.namespaceURI, 'title');
-    title.textContent = `${p.label}｜${p.count} 条｜中位单价 ${fmt(p.medianUnit)} 万/㎡`;
-    c.append(title);
-    svg.append(c);
-  });
-  host.append(svg);
-  host.append(el('div', 'hint',
-    `中位单价走势：${t[0].label} ${fmt(t[0].medianUnit)} → ${t[t.length - 1].label} ${fmt(t[t.length - 1].medianUnit)} 万/㎡`
-    + (multiSource ? '　⚠️ 当前混选了多个来源，两源样本构成不同，走势仅供参考' : '')));
-}
-
-function cellMark(r) {
+function markOf(r) {
   const conf = DICT.dup_conf[r[C.dup_conf]];
   const n = r[C.dup_candidates];
   if (!conf && !n) return null;
-  const span = el('span', 'mark', conf ? (conf === 'high' ? '重复' : '疑似重复') : '可能重复');
-  span.title = conf
-    ? `与另一来源的记录判为同一笔（置信度 ${conf}），可切换"去重口径"排除`
-    : `另有 ${n} 条来自另一来源的候选记录，但 key 在来源内碰撞，无法证实是否同一笔`;
-  return span;
+  const s = el('span', 'mark', conf ? (conf === 'high' ? '重复' : '疑似重复') : '可能重复');
+  s.title = conf
+    ? `与另一来源的记录判为同一笔（置信度 ${conf}），可切换去重口径排除`
+    : `另有 ${n} 条来自另一来源的候选记录，但无法证实是否同一笔`;
+  return s;
+}
+
+function card(r) {
+  const a = el('article', 'card');
+  a.dataset.unit = r[C.unit] === null ? '' : r[C.unit];
+  a.dataset.community = DICT.community[r[C.community]] || '';
+  const top = el('div', 'top');
+  const name = el('div', 'name', DICT.community[r[C.community]] || '（未标注小区）');
+  name.addEventListener('click', () => {
+    FILTERS.q = DICT.community[r[C.community]] || '';
+    $('#q').value = FILTERS.q;
+    update();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  top.append(name, el('span', `badge ${r[C.source] === DICT.source.indexOf('行舟双周') ? 'b-a' : 'b-b'}`,
+    DICT.source[r[C.source]]));
+  a.append(top);
+
+  const meta = el('div', 'meta');
+  const parts = [
+    [DICT.district[r[C.district]], DICT.area_group[r[C.area_group]]].filter(Boolean).join(' · '),
+    r[C.area] === null ? null : `${fmt(r[C.area], 1)} ㎡`,
+    DICT.layout[r[C.layout]],
+    DICT.facing[r[C.facing]],
+    r[C.built_year] ? `${fmtInt(r[C.built_year])} 年建成` : null,
+  ].filter(Boolean);
+  for (const p of parts) meta.append(el('span', null, p));
+  a.append(meta);
+
+  const price = el('div', 'price');
+  const total = el('span', 'total', fmt(r[C.total], 0));
+  total.append(el('small', null, '万'));
+  price.append(total);
+  if (r[C.unit] !== null) price.append(el('span', 'unit', `${fmt(r[C.unit])} 万/㎡`));
+  const neg = r[C.neg];
+  if (neg !== null && neg !== undefined) {
+    price.append(el('span', neg <= -10 ? 'neg strong' : 'neg', `砍价 ${fmt(neg, 2)}%`));
+  }
+  a.append(price);
+
+  const foot = el('div', 'foot');
+  foot.append(el('span', null, r[C.date] || '—'));
+  const right = el('span');
+  const m = markOf(r);
+  if (m) right.append(m, document.createTextNode(' '));
+  if (DICT.note[r[C.note]]) {
+    const link = el('a', 'link', '原笔记');
+    link.href = DICT.note[r[C.note]].url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.title = `${DICT.note[r[C.note]].title}（${DICT.note[r[C.note]].author}）`;
+    right.append(link);
+  }
+  foot.append(right);
+  a.append(foot);
+  return a;
 }
 
 function render() {
   renderStats(summarize(FILTERED, DICT));
-  renderTrend();
-  const tbody = $('#tbody');
-  tbody.textContent = '';
+  const list = $('#list');
+  list.textContent = '';
   const page = FILTERED.slice(0, FILTERS.limit);
-  const frag = document.createDocumentFragment();
-  for (const r of page) {
-    const tr = el('tr');
-    tr.append(el('td', null, r[C.date] || '—'));
-    const srcTd = el('td');
-    srcTd.append(el('span', `badge ${r[C.source] === 0 ? 'b-a' : 'b-b'}`, DICT.source[r[C.source]]));
-    tr.append(srcTd);
-    tr.append(el('td', null, DICT.district[r[C.district]] || '—'));
-    tr.append(el('td', null, DICT.area_group[r[C.area_group]] || '—'));
-    const cTd = el('td');
-    const a = el('a', 'link', DICT.community[r[C.community]] || '—');
-    a.href = 'javascript:void(0)';
-    a.addEventListener('click', () => {
-      $('#q').value = DICT.community[r[C.community]];
-      FILTERS.q = $('#q').value;
-      update();
-    });
-    cTd.append(a);
-    tr.append(cTd);
-    tr.append(el('td', null, fmtInt(r[C.built_year])));
-    tr.append(el('td', null, DICT.layout[r[C.layout]] || '—'));
-    tr.append(el('td', 'num', fmt(r[C.area], 1)));
-    tr.append(el('td', 'num', fmt(r[C.total], 0)));
-    tr.append(el('td', 'num strong', fmt(r[C.unit])));
-    const neg = r[C.neg];
-    const negTd = el('td', 'num');
-    if (neg !== null && neg !== undefined) {
-      negTd.append(el('span', neg <= -10 ? 'neg strong' : 'neg', `${fmt(neg, 2)}%`));
-    } else negTd.textContent = '—';
-    tr.append(negTd);
-    tr.append(el('td', null, DICT.facing[r[C.facing]] || '—'));
-    const mTd = el('td');
-    const m = cellMark(r);
-    if (m) mTd.append(m);
-    if (r[C.note] !== undefined && DICT.note[r[C.note]]) {
-      const link = el('a', 'link src', '原笔记');
-      link.href = DICT.note[r[C.note]].url;
-      link.target = '_blank';
-      link.rel = 'noopener';
-      link.title = `${DICT.note[r[C.note]].title}（${DICT.note[r[C.note]].author}）`;
-      mTd.append(link);
-    }
-    tr.append(mTd);
-    frag.append(tr);
+  if (!FILTERED.length) {
+    const box = el('div', 'empty');
+    box.append(el('div', null, '没有符合条件的成交记录'));
+    const btn = el('button', null, '清空筛选');
+    btn.addEventListener('click', () => { FILTERS = { ...DEFAULTS }; initControls(); update(); });
+    box.append(btn);
+    list.append(box);
+  } else {
+    const frag = document.createDocumentFragment();
+    for (const r of page) frag.append(card(r));
+    list.append(frag);
   }
-  tbody.append(frag);
-  $('#count').textContent = `命中 ${FILTERED.length.toLocaleString()} 条，当前显示 ${page.length} 条`;
+  $('#count').textContent = `命中 ${FILTERED.length.toLocaleString()} 条 · 已显示 ${Math.min(page.length, FILTERED.length)}`;
   $('#moreBtn').style.display = FILTERED.length > page.length ? '' : 'none';
+  const n = activeFilterCount();
+  const badge = $('#activeCount');
+  badge.textContent = String(n);
+  badge.classList.toggle('show', n > 0);
+  $('#filterBtn').classList.toggle('on', n > 0);
+}
+
+function loadMore() {
+  if (FILTERED.length <= FILTERS.limit) return;
+  FILTERS.limit += PAGE_STEP;
+  render();
 }
 
 function update() {
   FILTERED = sortRows(applyFilters(ROWS, { ...FILTERS, __dict: DICT }), FILTERS.sort, FILTERS.dir, DICT);
+  FILTERS.limit = Math.max(FILTERS.limit, PAGE_FIRST);
   history.replaceState(null, '', `#${filtersToHash()}`);
   render();
 }
 
-/* ---------- 启动 ---------- */
+function setupAutoLoad() {
+  if (!('IntersectionObserver' in window)) return;
+  observer = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) loadMore();
+  }, { rootMargin: '600px 0px' });
+  observer.observe($('#moreBtn'));
+}
+
 async function boot() {
   const res = await fetch('data/deals.json');
   const doc = await res.json();
   DICT = doc.dict;
   ROWS = doc.rows;
-  window.__DATA__ = doc;
   FILTERS = hashToFilters();
+  FILTERS.limit = PAGE_FIRST;
   const dates = ROWS.map((r) => r[C.date]).filter(Boolean).sort();
   MAX_DATE = dates[dates.length - 1] || '';
-  const dr = [dates[0], MAX_DATE];
-  $('#meta').textContent = `数据 ${doc.count.toLocaleString()} 条 · ${DICT.community.length.toLocaleString()} 小区 · `
-    + `${DICT.area_group.filter(Boolean).length} 片区 · ${DICT.period.length} 个统计期 · ${dr[0]}~${dr[1]} · 生成于 ${doc.generated}`;
+  $('#meta').textContent = `${doc.count.toLocaleString()} 条成交 · ${DICT.community.filter(Boolean).length.toLocaleString()} 小区 · `
+    + `${DICT.area_group.filter(Boolean).length} 片区 · ${dates[0]}~${MAX_DATE}`;
   initControls();
   update();
-  window.addEventListener('resize', renderTrend);
+  setupAutoLoad();
 }
 
 boot().catch((e) => {
-  $('#meta').textContent = `数据加载失败：${e.message}（请确认 data/deals.json 已随站点一起部署）`;
+  $('#meta').textContent = `数据加载失败：${e.message}`;
 });

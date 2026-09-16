@@ -151,25 +151,6 @@ export function summarize(rows, dict) {
   };
 }
 
-/** 按统计期聚合中位单价（用于走势缩略图）。 */
-export function trendByPeriod(rows, dict) {
-  const groups = new Map();
-  for (const r of rows) {
-    const p = r[C.period];
-    if (!groups.has(p)) groups.set(p, []);
-    groups.get(p).push(r[C.unit]);
-  }
-  return dict.period_order
-    .filter((i) => groups.has(i))
-    .map((i) => ({
-      index: i,
-      label: dict.period[i].label,
-      start: dict.period[i].start,
-      count: groups.get(i).length,
-      medianUnit: median(groups.get(i)),
-    }));
-}
-
 const CSV_HEAD = ['成交日期', '来源', '统计期', '行政区', '片区', '小区', '建成年份', '户型',
   '面积(㎡)', '总价(万)', '单价(万/㎡)', '谈价率(%)', '朝向', '重复标记', '来源笔记'];
 
