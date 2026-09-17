@@ -5,8 +5,8 @@
 
 export const C = {
   date: 0, district: 1, area_group: 2, community: 3, built_year: 4, layout: 5,
-  area: 6, total: 7, unit: 8, neg: 9, facing: 10, source: 11, period: 12,
-  note: 13, dup_conf: 14, dup_candidates: 15, loose_merged: 16,
+  area: 6, total: 7, unit: 8, neg: 9, facing: 10, period: 11,
+  dup_conf: 12, dup_candidates: 13, loose_merged: 14,
 };
 
 export const COLUMN_LABELS = [
@@ -40,7 +40,6 @@ function passes(r, f, dict, roomCache) {
   if (f.onlyDupCandidates && !(r[C.dup_candidates] > 0)) return false;
   if (f.districts.length && !f.districts.includes(r[C.district])) return false;
   if (f.area_groups.length && !f.area_groups.includes(r[C.area_group])) return false;
-  if (f.sources && f.sources.length && !f.sources.includes(r[C.source])) return false;
   if (f.facings.length) {   // facings 存的是方位位掩码（0=未标注），组合朝向按位命中
     const m = (dict.facing_mask && dict.facing_mask[r[C.facing]]) || 0;
     const orBits = f.facings.reduce((a, b) => a | b, 0);
@@ -87,7 +86,7 @@ function cmp(a, b, key, dict) {
   const idx = C[key];
   if (key === 'date') return (a[0] || '').localeCompare(b[0] || '');
   if (key === 'community' || key === 'district' || key === 'area_group' || key === 'layout'
-      || key === 'facing' || key === 'source' || key === 'period') {
+      || key === 'facing' || key === 'period') {
     const ta = dict[key === 'period' ? 'period' : key];
     const va = key === 'period' ? (ta[a[idx]] ? ta[a[idx]].start || '' : '') : (ta[a[idx]] || '');
     const vb = key === 'period' ? (ta[b[idx]] ? ta[b[idx]].start || '' : '') : (ta[b[idx]] || '');
